@@ -2,6 +2,7 @@ from flask import Flask
 import yfinance as yf
 import requests
 from datetime import datetime
+import threading
 
 app = Flask(__name__)
 
@@ -27,8 +28,7 @@ CATALYST_INTELLIGENCE = {
     'TATAPOWER.NS': {'news': 'Direct winner from artificial intelligence expansion; powering upcoming massive data center hubs.', 'sales': '15% YoY Growth expected'}
 }
 
-@app.route('/')
-def run_analyst_evaluation():
+def analyze_and_send():
     qualified_assets = []
     session = requests.Session()
     session.headers.update({'User-Agent': 'Mozilla/5.0'})
@@ -41,7 +41,6 @@ def run_analyst_evaluation():
             current_price = float(hist['Close'].iloc[-1])
             month_low = float(hist['Low'].min())
             
-            # Checks if the stock is within 5% of its 1-month low
             if current_price <= (month_low * 1.05):
                 intel = CATALYST_INTELLIGENCE.get(ticker, {'news': 'Consistent core business operations.', 'sales': 'Steady long-term compounder'})
                 qualified_assets.append(
@@ -59,9 +58,14 @@ def run_analyst_evaluation():
     if qualified_assets:
         intel_report += "\n".join(qualified_assets[:6])
     else:
-        # Fallback text to guarantee a message drops even if no entry conditions match
         intel_report += "🔄 *Scan complete:* All tracked assets are currently trading above conservative entry support boundaries today."
     
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     requests.post(url, json={"chat_id": TELEGRAM_CHAT_ID, "text": intel_report, "parse_mode": "Markdown"}, timeout=15)
-    return "Analyst matrix ran successfully.", 200
+
+@app.route('/')
+def run_analyst_evaluation():
+    # Start the scanning process instantly in the background
+    threading.Thread(target=analyze_and_send).start()
+    # Immediately tell Render everything is okay to stop the restart loops
+    return "Analyst matrix background processing started.", 200
