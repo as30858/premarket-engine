@@ -50,7 +50,7 @@ def analyze_and_send():
                     f"  ▪️ *Projected Outlook:* {intel['sales']}\n"
                     f"  ▪️ *Core Analyst News:* {intel['news']}\n"
                 )
-        except:
+        except Exception:
             pass
 
     intel_report = f"🏛️ *ANALYST PRE-MARKET STRATEGY MATRIX*\n🗓️ Date: {datetime.now().strftime('%d-%b-%Y')} | 08:30 AM IST\n────────────────────────\n\n"
@@ -65,7 +65,5 @@ def analyze_and_send():
 
 @app.route('/')
 def run_analyst_evaluation():
-    # Start the scanning process instantly in the background
     threading.Thread(target=analyze_and_send).start()
-    # Immediately tell Render everything is okay to stop the restart loops
-    return "Analyst matrix background processing started.", 200
+    return "OK", 200
